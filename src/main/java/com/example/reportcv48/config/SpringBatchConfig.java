@@ -5,6 +5,7 @@ import com.example.reportcv48.entity.Customer;
 import com.example.reportcv48.listener.StepSkipListener;
 import com.example.reportcv48.partition.ColumnRangePartitioner;
 import com.example.reportcv48.processor.CustomerProcessor;
+import com.example.reportcv48.reader.CustomerItemReader;
 import com.example.reportcv48.writer.CustomerItemWriter;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
@@ -16,6 +17,8 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.partition.PartitionHandler;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.step.skip.SkipPolicy;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -36,54 +39,24 @@ public class SpringBatchConfig {
     private final CustomerItemWriter customerWriter;
     private final JobExecutionListener jobExecutionListener;
     private final SkipPolicy skipPolicy;
+    private final ItemProcessor<Customer, Customer> processor;
+    private final FlatFileItemReader<Customer> reader;
+
 
     public SpringBatchConfig(JobBuilderFactory jobBuilderFactory,
                              StepBuilderFactory stepBuilderFactory,
                              CustomerItemWriter customerWriter,
                              @Qualifier("customJobExecutionListener")
                              JobExecutionListener jobExecutionListener,
-                             SkipPolicy skipPolicy) {
+                             SkipPolicy skipPolicy, ItemProcessor<Customer, Customer> processor,
+                             FlatFileItemReader<Customer> reader) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.customerWriter = customerWriter;
         this.jobExecutionListener = jobExecutionListener;
         this.skipPolicy = skipPolicy;
-    }
-
-    @Bean
-    public FlatFileItemReader<Customer> reader() {
-
-        FlatFileItemReader itemReader = new FlatFileItemReader<>();
-        itemReader.setResource(new FileSystemResource("src/main/resources/customers.csv"));
-        itemReader.setName("csvReader");
-        itemReader.setLinesToSkip(1);
-        itemReader.setLineMapper(lineMapper());
-
-        return itemReader;
-
-    }
-
-    private LineMapper<Customer> lineMapper() {
-        DefaultLineMapper<Customer> lineMapper = new DefaultLineMapper<>();
-
-        DelimitedLineTokenizer delimitedLineTokenizer = new DelimitedLineTokenizer();
-        delimitedLineTokenizer.setDelimiter(",");
-        delimitedLineTokenizer.setStrict(false);
-        delimitedLineTokenizer.setNames("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob", "age");
-
-        BeanWrapperFieldSetMapper<Customer> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Customer.class);
-
-        lineMapper.setLineTokenizer(delimitedLineTokenizer);
-        lineMapper.setFieldSetMapper(fieldSetMapper);
-
-        return lineMapper;
-
-    }
-
-    @Bean
-    public CustomerProcessor processor() {
-        return new CustomerProcessor();
+        this.processor = processor;
+        this.reader = reader;
     }
 
 
@@ -105,8 +78,8 @@ public class SpringBatchConfig {
     @Bean
     public Step slaveStep() {
         return stepBuilderFactory.get("slaveStep").<Customer, Customer>chunk(5)
-                .reader(reader())
-                .processor(processor())
+                .reader(reader)
+                .processor(processor)
                 .writer(customerWriter)
                 .faultTolerant()
                 //.listener(jobExecutionListener)
@@ -139,10 +112,6 @@ public class SpringBatchConfig {
         return threadPoolTaskExecutor;
     }
 
-//    @Bean
-//    public SkipPolicy skipPolicy() {
-//        return new ExceptionSkip();
-//    }
 
     @Bean
     public SkipListener skipListener() {

@@ -1,9 +1,11 @@
-package com.example.reportcv48.config;
+package com.example.reportcv48.exception;
 
 import org.springframework.batch.core.step.skip.SkipLimitExceededException;
 import org.springframework.batch.core.step.skip.SkipPolicy;
+import org.springframework.stereotype.Component;
 
-public class ExceptionSkip implements SkipPolicy {
+@Component
+public class SkipPolicyException implements SkipPolicy {
     @Override
     public boolean shouldSkip(Throwable throwable, int i) throws SkipLimitExceededException {
         return throwable instanceof NumberFormatException;

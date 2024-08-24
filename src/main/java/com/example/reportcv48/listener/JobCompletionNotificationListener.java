@@ -1,4 +1,4 @@
-package com.example.reportcv48.config;
+package com.example.reportcv48.listener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
