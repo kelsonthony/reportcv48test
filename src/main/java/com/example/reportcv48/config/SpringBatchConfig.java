@@ -4,8 +4,10 @@ package com.example.reportcv48.config;
 import com.example.reportcv48.entity.Customer;
 import com.example.reportcv48.listener.StepSkipListener;
 import com.example.reportcv48.partition.ColumnRangePartitioner;
-import lombok.AllArgsConstructor;
+import com.example.reportcv48.processor.CustomerProcessor;
+import com.example.reportcv48.writer.CustomerItemWriter;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -19,6 +21,7 @@ import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -27,11 +30,25 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @EnableBatchProcessing
-@AllArgsConstructor
 public class SpringBatchConfig {
-    private JobBuilderFactory jobBuilderFactory;
-    private StepBuilderFactory stepBuilderFactory;
-    private CustomerItemWriter customerWriter;
+    private final JobBuilderFactory jobBuilderFactory;
+    private final StepBuilderFactory stepBuilderFactory;
+    private final CustomerItemWriter customerWriter;
+    private final JobExecutionListener jobExecutionListener;
+    private final SkipPolicy skipPolicy;
+
+    public SpringBatchConfig(JobBuilderFactory jobBuilderFactory,
+                             StepBuilderFactory stepBuilderFactory,
+                             CustomerItemWriter customerWriter,
+                             @Qualifier("customJobExecutionListener")
+                             JobExecutionListener jobExecutionListener,
+                             SkipPolicy skipPolicy) {
+        this.jobBuilderFactory = jobBuilderFactory;
+        this.stepBuilderFactory = stepBuilderFactory;
+        this.customerWriter = customerWriter;
+        this.jobExecutionListener = jobExecutionListener;
+        this.skipPolicy = skipPolicy;
+    }
 
     @Bean
     public FlatFileItemReader<Customer> reader() {
@@ -92,11 +109,8 @@ public class SpringBatchConfig {
                 .processor(processor())
                 .writer(customerWriter)
                 .faultTolerant()
-                //.skipLimit(100)
-                //.skip(NumberFormatException.class) //Exception
-                //.noSkip(IllegalArgumentException.class)
-                .listener(skipListener())
-                .skipPolicy(skipPolicy())
+                //.listener(jobExecutionListener)
+                .skipPolicy(skipPolicy)
                 .build();
     }
 
@@ -125,10 +139,10 @@ public class SpringBatchConfig {
         return threadPoolTaskExecutor;
     }
 
-    @Bean
-    public SkipPolicy skipPolicy() {
-        return new ExceptionSkip();
-    }
+//    @Bean
+//    public SkipPolicy skipPolicy() {
+//        return new ExceptionSkip();
+//    }
 
     @Bean
     public SkipListener skipListener() {
