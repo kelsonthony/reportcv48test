@@ -4,8 +4,6 @@ package com.example.reportcv48.config;
 import com.example.reportcv48.entity.Customer;
 import com.example.reportcv48.listener.StepSkipListener;
 import com.example.reportcv48.partition.ColumnRangePartitioner;
-import com.example.reportcv48.processor.CustomerProcessor;
-import com.example.reportcv48.reader.CustomerItemReader;
 import com.example.reportcv48.writer.CustomerItemWriter;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
@@ -18,22 +16,16 @@ import org.springframework.batch.core.partition.PartitionHandler;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.step.skip.SkipPolicy;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.batch.item.file.LineMapper;
-import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
-import org.springframework.batch.item.file.mapping.DefaultLineMapper;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @EnableBatchProcessing
-public class SpringBatchConfig {
+public class BatchConfig {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final CustomerItemWriter customerWriter;
@@ -43,13 +35,13 @@ public class SpringBatchConfig {
     private final FlatFileItemReader<Customer> reader;
 
 
-    public SpringBatchConfig(JobBuilderFactory jobBuilderFactory,
-                             StepBuilderFactory stepBuilderFactory,
-                             CustomerItemWriter customerWriter,
-                             @Qualifier("customJobExecutionListener")
+    public BatchConfig(JobBuilderFactory jobBuilderFactory,
+                       StepBuilderFactory stepBuilderFactory,
+                       CustomerItemWriter customerWriter,
+                       @Qualifier("customJobExecutionListener")
                              JobExecutionListener jobExecutionListener,
-                             SkipPolicy skipPolicy, ItemProcessor<Customer, Customer> processor,
-                             FlatFileItemReader<Customer> reader) {
+                       SkipPolicy skipPolicy, ItemProcessor<Customer, Customer> processor,
+                       FlatFileItemReader<Customer> reader) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.customerWriter = customerWriter;
